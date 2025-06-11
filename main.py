@@ -1,28 +1,39 @@
 import streamlit as st
 import requests
-import json
 
-st.set_page_config(page_title="QSAFAgent Runtime Monitor", layout="wide")
+# Set up the page
+st.set_page_config(page_title="🔐 QSAFAgent Runtime Monitor", layout="centered")
 
-st.markdown("""
-# 🔐 QSAFAgent Runtime Monitor  
-Monitor AI threats across 9 security domains in real time.
-""")
+st.markdown("## 🔐 QSAFAgent Runtime Monitor")
+st.markdown("Monitor AI threats across 9 security domains in real time.")
 
-# Backend API URL (Change this if deployed)
+# API Endpoint (change if deployed elsewhere)
 API_URL = "http://localhost:5000/status"
 
-with st.form("qsaf_form"):
-    prompt = st.text_input("📝 Prompt", value="ignore previous instructions")
-    context = st.text_input("📌 Context", value="financial")
-    plugin_name = st.text_input("🔌 Plugin", value="web_search")
-    user_intent = st.text_input("🎯 User Intent", value="fetch_data")
-    response = st.text_area("🧠 LLM Response", value="Sample response with unknown data")
-    docs = st.text_area("📄 Retrieved Docs", value="doc1,doc2")
+# Form inputs
+with st.form("qsaf_input_form"):
+    st.markdown("### 📝 Prompt")
+    prompt = st.text_input("", value="ignore previous instructions")
 
-    submitted = st.form_submit_button("Run QSAF Analysis")
+    st.markdown("### 📌 Context")
+    context = st.text_input("", value="financial")
 
-if submitted:
+    st.markdown("### 🔌 Plugin")
+    plugin_name = st.text_input("", value="web_search")
+
+    st.markdown("### 🎯 User Intent")
+    user_intent = st.text_input("", value="fetch_data")
+
+    st.markdown("### 🧠 LLM Response")
+    response = st.text_area("", value="Sample response with unknown data")
+
+    st.markdown("### 📄 Retrieved Docs")
+    docs_input = st.text_input("", value="doc1,doc2")
+
+    submit_button = st.form_submit_button("🛡️ Run QSAF Analysis")
+
+# On Submit
+if submit_button:
     try:
         payload = {
             "prompt": prompt,
@@ -30,25 +41,40 @@ if submitted:
             "plugin_name": plugin_name,
             "user_intent": user_intent,
             "response": response,
-            "docs": docs.split(",")
+            "docs": [d.strip() for d in docs_input.split(",")]
         }
-        res = requests.post(API_URL, json=payload)
-        result = res.json()
+        response = requests.post(API_URL, json=payload)
+        result = response.json()
 
         st.success("✅ Analysis Completed")
-        st.json(result)
 
-        # Optional tabs
-        tab1, tab2, tab3 = st.tabs(["Prompt Injection", "Output Risk", "Payload Signature"])
-        with tab1:
-            st.subheader("🛡️ Prompt Injection Detection")
+        # Expandable results by domain
+        with st.expander("🛡️ Prompt Injection Detection"):
             st.json(result.get("prompt_result", {}))
-        with tab2:
-            st.subheader("⚠️ Output Risk Evaluation")
+
+        with st.expander("🔐 Role & Context Manipulation"):
+            st.json(result.get("role_manipulation", {}))
+
+        with st.expander("🔌 Plugin Governance"):
+            st.json({"plugin_allowed": result.get("plugin_allowed", None)})
+
+        with st.expander("⚠️ Output Risk Analysis"):
             st.json(result.get("output_risk", {}))
-        with tab3:
-            st.subheader("🔏 Signed Payload Token")
+
+        with st.expander("📊 Behavioral Anomaly Detection"):
+            st.json(result.get("anomaly_result", {}))
+
+        with st.expander("🔏 Payload Integrity & Signing"):
             st.code(result.get("signed_payload", ""), language="json")
 
+        with st.expander("📚 RAG Source Attribution"):
+            st.json(result.get("rag_monitoring", {}))
+
+        with st.expander("🗃️ Data Governance"):
+            st.json(result.get("data_governance", {}))
+
+        with st.expander("🌐 Cross-Environment Defense"):
+            st.json(result.get("cross_defense", {}))
+
     except Exception as e:
-        st.error(f"❌ Error: {e}")
+        st.error(f"❌ Error while contacting backend: {e}")
